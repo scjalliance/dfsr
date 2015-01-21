@@ -11,6 +11,13 @@ import (
 	"syscall"
 )
 
+// ErrNoReplication means that the requested rgname or rfname does not exist
+var ErrNoReplication = errors.New("Replication group does not exist")
+
+var noBacklogRE = regexp.MustCompile(`\bNo\s*Backlog\b`)
+var countRE = regexp.MustCompile(`\bBacklog\s*File\s*Count:\s*(\d+)\b`)
+var noReplRE = regexp.MustCompile(`\b0x80041002\b`)
+
 // Backlog returns the backlog count
 func Backlog(smem string, rmem string, rgname string, rfname string) (int, error) {
 	cmd := exec.Command("dfsrdiag")
@@ -19,12 +26,13 @@ func Backlog(smem string, rmem string, rgname string, rfname string) (int, error
 	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		if noReplRE.Match(out) {
+			return -1, ErrNoReplication
+		}
 		return -1, errors.New(string(out))
 	}
 
 	backlog := -1
-	noBacklogRE := regexp.MustCompile(`\bNo\s*Backlog\b`)
-	countRE := regexp.MustCompile(`\bBacklog\s*File\s*Count:\s*(\d+)\b`)
 	if noBacklogRE.Match(out) {
 		backlog = 0
 	} else if matches := countRE.FindAllSubmatch(out, 1); len(matches) > 0 && len(matches[0]) > 0 {
