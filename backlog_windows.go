@@ -19,7 +19,7 @@ func Backlog(smem string, rmem string, rgname string, rfname string) (int, error
 	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return -1, err
+		return -1, errors.New(string(out))
 	}
 
 	backlog := -1
@@ -29,7 +29,7 @@ func Backlog(smem string, rmem string, rgname string, rfname string) (int, error
 		backlog = 0
 	} else if matches := countRE.FindAllSubmatch(out, 1); len(matches) > 0 && len(matches[0]) > 0 {
 		var err error
-		backlog, err = strconv.Atoi(string(matches[0][0]))
+		backlog, err = strconv.Atoi(string(matches[0][1]))
 		if err != nil {
 			fmt.Printf("%s\n", err)
 			return -1, err
