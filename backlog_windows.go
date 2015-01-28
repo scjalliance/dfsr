@@ -3,6 +3,8 @@
 package dfsr
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -46,4 +48,25 @@ func Backlog(smem string, rmem string, rgname string, rfname string) (int, error
 		return -1, errors.New(string(out))
 	}
 	return backlog, nil
+}
+
+// RGList returns the list of replication groups
+func RGList() ([]string, error) {
+	cmd := exec.Command("dfsradmin", "rg", "list", "/attr:rgname")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+	var list []string
+	buf := bytes.NewBuffer(out)
+	scanner := bufio.NewScanner(buf)
+	scanner.Scan() // shift off the unwanted first line
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			break
+		}
+		list = append(list, line)
+	}
+	return list, nil
 }
